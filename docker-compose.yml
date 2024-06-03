@@ -7,8 +7,8 @@ services:
     container_name: "frontendapp"
     env_file:
       - .env
-    depends_on:
-      - backendapp
+    environment:
+      - PORT=${FRONT_PORT}
 
   backendapp:
     build: ./backendapp
@@ -17,13 +17,8 @@ services:
     container_name: "backendapp"
     env_file:
       - .env
-    depends_on:
-      - db
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:${BACK_PORT}"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
+    environment:
+      - PORT=${BACK_PORT}
 
   db:
     image: postgres:13
@@ -37,11 +32,6 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./db-scripts:/docker-entrypoint-initdb.d
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
 
   pgadmin:
     image: dpage/pgadmin4
@@ -51,9 +41,6 @@ services:
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
     ports:
       - "${PGADMIN_PORT}:80"
-    depends_on:
-      db:
-        condition: service_healthy
 
 volumes:
   postgres-data:
