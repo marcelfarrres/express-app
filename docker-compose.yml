@@ -1,0 +1,59 @@
+version: '3.8'
+services:
+  frontendapp:
+    build: ./frontendapp
+    ports:
+      - "${FRONT_PORT}:${FRONT_PORT}"
+    container_name: "frontendapp"
+    env_file:
+      - .env
+    depends_on:
+      - backendapp
+
+  backendapp:
+    build: ./backendapp
+    ports:
+      - "${BACK_PORT}:${BACK_PORT}"
+    container_name: "backendapp"
+    env_file:
+      - .env
+    depends_on:
+      - db
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${BACK_PORT}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  db:
+    image: postgres:13
+    container_name: "postgresdb"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "${POSTGRES_PORT}:${POSTGRES_PORT}"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./db-scripts:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: "pgadmin"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+    ports:
+      - "${PGADMIN_PORT}:80"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
